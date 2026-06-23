@@ -7,7 +7,8 @@ const authProxy = createProxyMiddleware({
 
     pathRewrite: {
         "^/api/auth": ""
-    }
+    },
+    logLevel: "debug"
 });
 
 export default authProxy;

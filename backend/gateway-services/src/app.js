@@ -12,9 +12,14 @@ app.use(express.json());
 app.use(morgan('dev'));
 app.use(apiLimiter);
 
-app.use('/api/auth', authProxy);
+app.use("/api/auth", authProxy);
 
 
-
+app.get("/", (req, res) => {
+    res.json({
+        service: "Gateway Service",
+        status: "Running"
+    });
+});
 
 export default app;
