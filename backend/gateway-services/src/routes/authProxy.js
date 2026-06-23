@@ -1,4 +1,4 @@
-import { createProxyMiddleware } from "http-proxy-middleware";
+import { createProxyMiddleware, fixRequestBody } from "http-proxy-middleware";
 
 const authProxy = createProxyMiddleware({
     target: process.env.AUTH_SERVICE_URL,
@@ -8,6 +8,11 @@ const authProxy = createProxyMiddleware({
     pathRewrite: {
         "^/api/auth": ""
     },
+
+    on: {
+        proxyReq: fixRequestBody
+    },
+
     logLevel: "debug"
 });
 

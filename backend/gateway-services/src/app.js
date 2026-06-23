@@ -12,8 +12,8 @@ app.use(express.json());
 app.use(morgan('dev'));
 app.use(apiLimiter);
 
-app.use("/api/auth", authProxy);
 
+app.use("/api/auth", authProxy);
 
 app.get("/", (req, res) => {
     res.json({
@@ -21,5 +21,7 @@ app.get("/", (req, res) => {
         status: "Running"
     });
 });
+
+
 
 export default app;
