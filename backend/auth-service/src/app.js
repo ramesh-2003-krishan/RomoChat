@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
+import authRoutes from "./routes/authRoutes.js";
 
 const app = express();
 
@@ -14,5 +15,7 @@ app.get("/", (req, res) => {
         status: "Running"
     });
 });
+
+app.use("/", authRoutes);
 
 export default app;
