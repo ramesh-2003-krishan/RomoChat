@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { apiLimiter } from './middleware/ratelimiter.js';
 import authProxy from './routes/authProxy.js';
+import { verifyToken } from './middleware/authMiddleware.js';
 
 const app = express();
 
