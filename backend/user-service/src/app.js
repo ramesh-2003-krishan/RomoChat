@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
+import userRoutes from "./routes/userRoutes.js";
 
 const app = express();
 
@@ -14,5 +15,7 @@ app.get("/", (req, res) => {
         status: "Running"
     });
 });
+
+app.use("/", userRoutes);
 
 export default app;
