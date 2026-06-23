@@ -1,11 +1,15 @@
 import UserProfile from "../models/UserProfile.js";
 
 export const getProfile = async (req, res) => {
+
     try {
+
+        const userId =
+            req.headers["x-user-id"];
 
         const profile =
             await UserProfile.findOne({
-                authUserId: req.user.userId
+                authUserId: userId
             });
 
         if (!profile) {
@@ -21,9 +25,11 @@ export const getProfile = async (req, res) => {
         });
 
     } catch (error) {
+
         res.status(500).json({
             success: false,
             message: "Internal Server Error"
         });
+
     }
 };
