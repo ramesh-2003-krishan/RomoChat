@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import User from "../model/user.js";
 import jwt from "jsonwebtoken";
 import generateToken from "../utils/genarateToken.js";
+import axios from "axios";
 
 export const register = async (req, res) => {
     try {
@@ -44,6 +45,15 @@ export const register = async (req, res) => {
             email,
             password: hashedPassword
         });
+
+        await axios.post(
+            `${process.env.USER_SERVICE_URL}/internal/profile`,
+            {
+                authUserId: user._id.toString(),
+                username: user.username,
+                email: user.email
+            }
+        );
 
         res.status(201).json({
             success: true,
