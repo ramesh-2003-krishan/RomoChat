@@ -33,3 +33,46 @@ export const getProfile = async (req, res) => {
 
     }
 };
+
+export const createProfile = async (req, res) => {
+    try {
+
+        const {
+            authUserId,
+            username,
+            email
+        } = req.body;
+
+        const existingProfile =
+            await UserProfile.findOne({
+                authUserId
+            });
+
+        if (existingProfile) {
+            return res.status(400).json({
+                success: false,
+                message: "Profile already exists"
+            });
+        }
+
+        const profile =
+            await UserProfile.create({
+                authUserId,
+                username,
+                email
+            });
+
+        res.status(201).json({
+            success: true,
+            profile
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+
+    }
+};

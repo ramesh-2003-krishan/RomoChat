@@ -2,7 +2,8 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import userRoutes from "./routes/userRoutes.js";
-import { extractUser } from "./middlewares/authMiddleware.js";
+import userProxy from "./routes/userProxy.js";
+import { verifyToken } from "./middleware/authMiddleware.js";
 
 const app = express();
 
@@ -17,6 +18,12 @@ app.get("/", (req, res) => {
     });
 });
 
-app.use("/", extractUser, userRoutes);
+app.use(
+    "/api/users",
+    verifyToken,
+    userProxy
+);
+
+app.use("/", userRoutes);
 
 export default app;
