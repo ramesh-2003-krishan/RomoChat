@@ -18,6 +18,7 @@ export const getProfile = async (req, res) => {
                 message: "Profile not found"
             });
         }
+      
 
         res.status(200).json({
             success: true,
