@@ -13,7 +13,7 @@ app.use(cors());
 app.use(morgan('dev'));
 app.use(apiLimiter);
 
-// Proxy routes (bypass body parser at gateway)
+
 app.use("/api/auth", authProxy);
 app.use("/api/users", verifyToken, userProxy);
 
@@ -38,6 +38,12 @@ app.get(
         });
 
     }
+);
+
+app.use(
+    "/api/users",
+    verifyToken,
+    userProxy
 );
 
 
