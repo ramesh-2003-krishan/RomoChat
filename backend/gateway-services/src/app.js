@@ -6,6 +6,7 @@ import { apiLimiter } from './middleware/ratelimiter.js';
 import authProxy from './routes/authProxy.js';
 import { verifyToken } from './middleware/authMiddleware.js';
 import userProxy from './routes/userProxy.js';
+import chatProxy from './routes/chatProxy.js';
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use(apiLimiter);
 
 app.use("/api/auth", authProxy);
 app.use("/api/users", verifyToken, userProxy);
+app.use("/api/chats", verifyToken, chatProxy);
 
 app.use(express.json());
 
