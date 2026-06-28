@@ -13,6 +13,20 @@ const conversationSchema = new mongoose.Schema(
             type: String,
             default: ""
         },
+        lastMessageSender: {
+         type: String,
+        default: ""
+        },
+
+           isGroup: {
+           type: Boolean,
+           default: false
+        },
+
+        groupName: {
+         type: String,
+          default: ""
+        },
 
         lastMessageAt: {
             type: Date,
