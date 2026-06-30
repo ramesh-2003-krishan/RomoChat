@@ -1,10 +1,12 @@
 import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { socket } from "../config/socket";
 import { connectSocket, disconnectSocket } from "../services/socketService";
 import { useAuthStore } from "../features/auth/authStore";
 import { useMessageStore } from "../features/message/messageStore";
 
 export const useSocket = () => {
+  const queryClient = useQueryClient();
   const token = useAuthStore((state) => state.token);
   const addMessageToHistory = useMessageStore((state) => state.addMessageToHistory);
   const setTypingStatus = useMessageStore((state) => state.setTypingStatus);
@@ -28,8 +30,24 @@ export const useSocket = () => {
         setTypingStatus(conversationId, userId, isTyping);
       };
 
+      // Listener for presence updates (online/offline status)
+      const handleUserStatus = ({ userId, isOnline }) => {
+        console.log("WebSocket user status received:", { userId, isOnline });
+        queryClient.setQueryData(["profile", userId], (oldData) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            profile: {
+              ...oldData.profile,
+              isOnline,
+            },
+          };
+        });
+      };
+
       socket.on("new_message", handleNewMessage);
       socket.on("typing", handleTyping);
+      socket.on("user_status", handleUserStatus);
 
       // Handle socket connection states logging for debugging
       const handleConnect = () => console.log("Socket connected successfully: ID =", socket.id);
@@ -43,13 +61,14 @@ export const useSocket = () => {
       return () => {
         socket.off("new_message", handleNewMessage);
         socket.off("typing", handleTyping);
+        socket.off("user_status", handleUserStatus);
         socket.off("connect", handleConnect);
         socket.off("disconnect", handleDisconnect);
         socket.off("connect_error", handleConnectError);
         disconnectSocket();
       };
     }
-  }, [token, addMessageToHistory, setTypingStatus]);
+  }, [token, addMessageToHistory, setTypingStatus, queryClient]);
 
   return socket;
 };
