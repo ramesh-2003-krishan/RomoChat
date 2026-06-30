@@ -1,79 +1,107 @@
-import React from "react";
-import { useAuthStore } from "../features/auth/authStore";
+import React, { useState } from "react";
+import MainLayout from "../components/layout/MainLayout";
+
+const INITIAL_CONVERSATIONS = [
+  {
+    id: "conv-1",
+    otherParticipantName: "Subham Rana",
+    lastMessage: "Hey, are we still meeting today?",
+    lastMessageAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+    isOnline: true,
+    unreadCount: 2,
+    isGroup: false,
+  },
+  {
+    id: "conv-2",
+    otherParticipantName: "Alice Smith",
+    lastMessage: "The new design looks clean!",
+    lastMessageAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+    isOnline: false,
+    unreadCount: 0,
+    isGroup: false,
+  },
+  {
+    id: "conv-3",
+    groupName: "Project Alpha Group",
+    otherParticipantName: "Project Alpha Group",
+    lastMessage: "Bob: I've updated the gateway API routes.",
+    lastMessageAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+    isOnline: true,
+    unreadCount: 0,
+    isGroup: true,
+  },
+];
+
+const INITIAL_MESSAGES = {
+  "conv-1": [
+    { id: "msg-1-1", senderId: "other", content: "Hey! How is the RomoChat frontend coming along?", createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString() },
+    { id: "msg-1-2", senderId: "me", content: "Going great! Just setting up the styling and layouts.", createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
+    { id: "msg-1-3", senderId: "other", content: "Awesome, let me know if you need help with Socket integrations.", createdAt: new Date(Date.now() - 1000 * 60 * 20).toISOString() },
+    { id: "msg-1-4", senderId: "other", content: "Hey, are we still meeting today?", createdAt: new Date(Date.now() - 1000 * 60 * 10).toISOString() },
+  ],
+  "conv-2": [
+    { id: "msg-2-1", senderId: "other", content: "Did you review the Tailwind configuration?", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString() },
+    { id: "msg-2-2", senderId: "me", content: "Yes, I moved to Tailwind CSS v4 to leverage Vite plugin integration directly.", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString() },
+    { id: "msg-2-3", senderId: "other", content: "The new design looks clean!", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() },
+  ],
+  "conv-3": [
+    { id: "msg-3-1", senderId: "other", content: "Alice: Remember to check env variables.", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString() },
+    { id: "msg-3-2", senderId: "other", content: "Bob: I've updated the gateway API routes.", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString() },
+  ],
+};
 
 const Home = () => {
-  const { user, logout } = useAuthStore();
+  const [conversations, setConversations] = useState(INITIAL_CONVERSATIONS);
+  const [activeChat, setActiveChat] = useState(null);
+  const [messages, setMessages] = useState(INITIAL_MESSAGES);
+
+  const handleSelectChat = (chat) => {
+    setActiveChat(chat);
+    
+    // Clear unreadCount on select
+    setConversations((prev) =>
+      prev.map((c) => (c.id === chat.id ? { ...c, unreadCount: 0 } : c))
+    );
+  };
+
+  const handleSendMessage = (text) => {
+    if (!activeChat) return;
+
+    const newMsg = {
+      id: `msg-${Date.now()}`,
+      senderId: "me",
+      content: text,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Update messages log
+    setMessages((prev) => ({
+      ...prev,
+      [activeChat.id]: [...(prev[activeChat.id] || []), newMsg],
+    }));
+
+    // Update conversation lastMessage
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === activeChat.id
+          ? {
+              ...c,
+              lastMessage: text,
+              lastMessageAt: newMsg.createdAt,
+            }
+          : c
+      )
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--bg-primary))] flex flex-col relative overflow-hidden">
-      {/* Background Glows */}
-      <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-[hsla(263,70%,50%,0.08)] blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-[hsla(191,91%,36%,0.05)] blur-[120px] pointer-events-none" />
-
-      {/* Top Navbar */}
-      <header className="glass-panel sticky top-0 z-50 border-x-0 border-t-0 py-4 px-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[hsl(var(--primary))] to-[hsl(var(--accent))] flex items-center justify-center font-bold text-white shadow-md">
-            R
-          </div>
-          <span className="text-xl font-bold tracking-tight text-gradient">
-            RomoChat
-          </span>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="text-right hidden sm:block">
-            <p className="text-sm font-medium text-[hsl(var(--text-main))]">
-              {user?.username || "Guest"}
-            </p>
-            <p className="text-xs text-[hsl(var(--text-muted))]">
-              {user?.email || ""}
-            </p>
-          </div>
-
-          <button
-            onClick={logout}
-            className="px-4 py-2 rounded-lg bg-[hsla(346,77%,49%,0.1)] border border-[hsla(346,77%,49%,0.2)] text-[hsl(var(--error))] text-sm font-medium hover:bg-[hsla(346,77%,49%,0.18)] transition-all duration-200 cursor-pointer"
-          >
-            Logout
-          </button>
-        </div>
-      </header>
-
-      {/* Dashboard Body */}
-      <main className="flex-1 flex items-center justify-center p-6 z-10">
-        <div className="max-w-2xl w-full glass-panel rounded-2xl p-10 text-center animate-slide-up shadow-2xl">
-          <div className="w-20 h-20 rounded-full bg-[hsla(263,70%,50%,0.1)] border border-[hsla(263,70%,50%,0.2)] flex items-center justify-center text-3xl mx-auto mb-6">
-            🎉
-          </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-gradient mb-4">
-            Hello, {user?.username || "Friend"}!
-          </h1>
-          <p className="text-[hsl(var(--text-muted))] mb-8 max-w-md mx-auto text-base">
-            You've successfully authenticated and accessed the protected RomoChat area. Realtime features and room lobbies are now available to integrate!
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-lg mx-auto">
-            <div className="p-5 rounded-xl border border-[hsl(var(--card-border))] bg-[hsla(240,10%,7%,0.4)] text-left">
-              <h3 className="text-sm font-bold text-gradient mb-1">
-                Realtime Gateway
-              </h3>
-              <p className="text-xs text-[hsl(var(--text-muted))]">
-                WS connection: <code className="text-[hsl(var(--accent))]">http://localhost:5004</code>
-              </p>
-            </div>
-            <div className="p-5 rounded-xl border border-[hsl(var(--card-border))] bg-[hsla(240,10%,7%,0.4)] text-left">
-              <h3 className="text-sm font-bold text-gradient mb-1">
-                Auth Status
-              </h3>
-              <p className="text-xs text-[hsl(var(--text-muted))]">
-                Logged in as <code className="text-[hsl(var(--accent))]">{user?.email}</code>
-              </p>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
+    <MainLayout
+      conversations={conversations}
+      activeChat={activeChat}
+      onSelectChat={handleSelectChat}
+      mockMessages={activeChat ? messages[activeChat.id] || [] : []}
+      onSendMessage={handleSendMessage}
+    />
   );
 };
 
