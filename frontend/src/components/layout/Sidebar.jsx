@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import SearchBar from "../common/SearchBar";
 import Avatar from "../common/Avatar";
+import Modal from "../common/Modal";
 import { useAuthStore } from "../../features/auth/authStore";
-import { getProfileByIdAPI } from "../../services/userService";
+import { getProfileByIdAPI, searchUsersAPI } from "../../services/userService";
+import { createConversationAPI } from "../../services/chatService";
 
 const formatTime = (dateString) => {
   if (!dateString) return "";
@@ -79,7 +81,42 @@ const ConversationItem = ({ chat, activeChatId, onSelectChat, currentUserId }) =
 
 const Sidebar = ({ conversations = [], activeChatId, onSelectChat }) => {
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Modal states
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalSearchQuery, setModalSearchQuery] = useState("");
+  
   const { user, logout } = useAuthStore();
+  const queryClient = useQueryClient();
+
+  // Query to search users
+  const { data: searchResults, isLoading: isSearching } = useQuery({
+    queryKey: ["searchUsers", modalSearchQuery],
+    queryFn: () => searchUsersAPI(modalSearchQuery),
+    enabled: modalSearchQuery.trim().length > 0,
+  });
+
+  const searchedUsers = searchResults?.profiles || [];
+
+  // Mutation to start new chat
+  const startChatMutation = useMutation({
+    mutationFn: createConversationAPI,
+    onSuccess: (res) => {
+      // Refresh active conversations
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      
+      // Auto select the new chat
+      onSelectChat({
+        ...res.conversation,
+        id: res.conversation._id,
+        otherParticipantName: "Loading...",
+      });
+
+      // Clear and close
+      setIsModalOpen(false);
+      setModalSearchQuery("");
+    },
+  });
 
   const filteredConversations = conversations.filter((c) => {
     if (searchQuery === "") return true;
@@ -99,6 +136,17 @@ const Sidebar = ({ conversations = [], activeChatId, onSelectChat }) => {
             RomoChat
           </span>
         </div>
+
+        {/* Plus Button to open new chat modal */}
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="p-2 rounded-lg hover:bg-[hsl(var(--bg-tertiary))] text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-main))] transition-colors cursor-pointer"
+          title="Start Chat"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
       </div>
 
       {/* Search Panel */}
@@ -162,6 +210,54 @@ const Sidebar = ({ conversations = [], activeChatId, onSelectChat }) => {
           </button>
         </div>
       </div>
+
+      {/* Start Chat Modal Overlay */}
+      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setModalSearchQuery(""); }} title="Start New Chat">
+        <div className="space-y-4">
+          <input
+            type="text"
+            value={modalSearchQuery}
+            onChange={(e) => setModalSearchQuery(e.target.value)}
+            placeholder="Search by username or email..."
+            className="w-full px-4 py-2.5 rounded-lg glass-input text-sm focus:outline-none"
+          />
+
+          <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+            {modalSearchQuery.trim() === "" ? (
+              <div className="text-center py-8 text-[hsl(var(--text-muted))] text-xs">
+                Type a query to search registered users
+              </div>
+            ) : isSearching ? (
+              <div className="text-center py-8 text-[hsl(var(--text-muted))] text-xs">
+                Searching users...
+              </div>
+            ) : searchedUsers.length === 0 ? (
+              <div className="text-center py-8 text-[hsl(var(--text-muted))] text-xs">
+                No users found
+              </div>
+            ) : (
+              searchedUsers.map((profile) => (
+                <button
+                  key={profile._id}
+                  onClick={() => startChatMutation.mutate(profile.authUserId)}
+                  disabled={startChatMutation.isPending}
+                  className="w-full p-2.5 rounded-xl border border-[hsl(var(--card-border))] bg-[hsla(240,10%,7%,0.4)] hover:bg-[hsl(var(--bg-tertiary))] flex items-center gap-3 text-left transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Avatar name={profile.displayName || profile.username} isOnline={profile.isOnline} size="w-10 h-10" />
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-xs font-bold text-[hsl(var(--text-main))] truncate">
+                      {profile.displayName || profile.username}
+                    </h4>
+                    <p className="text-[10px] text-[hsl(var(--text-muted))] truncate">
+                      @{profile.username}
+                    </p>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
