@@ -1,36 +1,7 @@
 import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import MainLayout from "../components/layout/MainLayout";
-
-const INITIAL_CONVERSATIONS = [
-  {
-    id: "conv-1",
-    otherParticipantName: "Subham Rana",
-    lastMessage: "Hey, are we still meeting today?",
-    lastMessageAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
-    isOnline: true,
-    unreadCount: 2,
-    isGroup: false,
-  },
-  {
-    id: "conv-2",
-    otherParticipantName: "Alice Smith",
-    lastMessage: "The new design looks clean!",
-    lastMessageAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    isOnline: false,
-    unreadCount: 0,
-    isGroup: false,
-  },
-  {
-    id: "conv-3",
-    groupName: "Project Alpha Group",
-    otherParticipantName: "Project Alpha Group",
-    lastMessage: "Bob: I've updated the gateway API routes.",
-    lastMessageAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-    isOnline: true,
-    unreadCount: 0,
-    isGroup: true,
-  },
-];
+import { getConversationsAPI } from "../services/chatService";
 
 const INITIAL_MESSAGES = {
   "conv-1": [
@@ -51,17 +22,20 @@ const INITIAL_MESSAGES = {
 };
 
 const Home = () => {
-  const [conversations, setConversations] = useState(INITIAL_CONVERSATIONS);
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
 
+  // Fetch real conversation list from backend
+  const { data, isLoading } = useQuery({
+    queryKey: ["conversations"],
+    queryFn: getConversationsAPI,
+    refetchInterval: 5000, // Poll every 5 seconds for updates
+  });
+
+  const conversations = data?.conversations || [];
+
   const handleSelectChat = (chat) => {
     setActiveChat(chat);
-    
-    // Clear unreadCount on select
-    setConversations((prev) =>
-      prev.map((c) => (c.id === chat.id ? { ...c, unreadCount: 0 } : c))
-    );
   };
 
   const handleSendMessage = (text) => {
@@ -74,24 +48,11 @@ const Home = () => {
       createdAt: new Date().toISOString(),
     };
 
-    // Update messages log
+    // Update messages log for selected chat
     setMessages((prev) => ({
       ...prev,
       [activeChat.id]: [...(prev[activeChat.id] || []), newMsg],
     }));
-
-    // Update conversation lastMessage
-    setConversations((prev) =>
-      prev.map((c) =>
-        c.id === activeChat.id
-          ? {
-              ...c,
-              lastMessage: text,
-              lastMessageAt: newMsg.createdAt,
-            }
-          : c
-      )
-    );
   };
 
   return (

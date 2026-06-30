@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import SearchBar from "../common/SearchBar";
 import Avatar from "../common/Avatar";
 import { useAuthStore } from "../../features/auth/authStore";
+import { getProfileByIdAPI } from "../../services/userService";
 
 const formatTime = (dateString) => {
   if (!dateString) return "";
@@ -14,12 +16,74 @@ const formatTime = (dateString) => {
   }
 };
 
+const ConversationItem = ({ chat, activeChatId, onSelectChat, currentUserId }) => {
+  const isGroup = chat.isGroup;
+  const otherParticipantId = isGroup
+    ? null
+    : chat.participants?.find((id) => id !== currentUserId);
+
+  // Resolve other participant details using React Query
+  const { data } = useQuery({
+    queryKey: ["profile", otherParticipantId],
+    queryFn: () => getProfileByIdAPI(otherParticipantId),
+    enabled: !!otherParticipantId,
+  });
+
+  const profile = data?.profile;
+  const chatName = isGroup ? chat.groupName : (profile?.displayName || profile?.username || "Loading...");
+  const isOnline = isGroup ? false : (profile?.isOnline || false);
+  const isActive = chat._id === activeChatId;
+
+  const handleClick = () => {
+    onSelectChat({
+      ...chat,
+      id: chat._id,
+      otherParticipantName: chatName,
+      isOnline,
+    });
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      className={`w-full p-3 rounded-xl flex items-center gap-3 text-left transition-all duration-200 cursor-pointer ${
+        isActive
+          ? "bg-[hsla(263,70%,50%,0.15)] border border-[hsla(263,70%,50%,0.25)]"
+          : "hover:bg-[hsl(var(--bg-tertiary))] border border-transparent"
+      }`}
+    >
+      <Avatar name={chatName} isOnline={isOnline} size="w-11 h-11" />
+      
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between items-baseline mb-0.5">
+          <h4 className="text-xs font-bold text-[hsl(var(--text-main))] truncate">
+            {chatName}
+          </h4>
+          <span className="text-[9px] text-[hsl(var(--text-muted))]">
+            {formatTime(chat.lastMessageAt || chat.updatedAt)}
+          </span>
+        </div>
+        <p className="text-[11px] text-[hsl(var(--text-muted))] truncate">
+          {chat.lastMessage || "No messages yet"}
+        </p>
+      </div>
+
+      {chat.unreadCount > 0 && (
+        <span className="flex-shrink-0 h-4 min-w-[16px] rounded-full bg-[hsl(var(--primary))] text-[8px] font-bold text-white flex items-center justify-center px-1">
+          {chat.unreadCount}
+        </span>
+      )}
+    </button>
+  );
+};
+
 const Sidebar = ({ conversations = [], activeChatId, onSelectChat }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const { user, logout } = useAuthStore();
 
   const filteredConversations = conversations.filter((c) => {
-    const name = c.isGroup ? c.groupName : c.otherParticipantName;
+    if (searchQuery === "") return true;
+    const name = c.isGroup ? c.groupName : "";
     return name.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
@@ -49,44 +113,15 @@ const Sidebar = ({ conversations = [], activeChatId, onSelectChat }) => {
             No chats found
           </div>
         ) : (
-          filteredConversations.map((chat) => {
-            const chatName = chat.isGroup ? chat.groupName : chat.otherParticipantName;
-            const isActive = chat.id === activeChatId;
-
-            return (
-              <button
-                key={chat.id}
-                onClick={() => onSelectChat(chat)}
-                className={`w-full p-3 rounded-xl flex items-center gap-3 text-left transition-all duration-200 cursor-pointer ${
-                  isActive
-                    ? "bg-[hsla(263,70%,50%,0.15)] border border-[hsla(263,70%,50%,0.25)]"
-                    : "hover:bg-[hsl(var(--bg-tertiary))] border border-transparent"
-                }`}
-              >
-                <Avatar name={chatName} isOnline={chat.isOnline} size="w-11 h-11" />
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-baseline mb-0.5">
-                    <h4 className="text-xs font-bold text-[hsl(var(--text-main))] truncate">
-                      {chatName}
-                    </h4>
-                    <span className="text-[9px] text-[hsl(var(--text-muted))]">
-                      {formatTime(chat.lastMessageAt)}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-[hsl(var(--text-muted))] truncate">
-                    {chat.lastMessage || "No messages yet"}
-                  </p>
-                </div>
-
-                {chat.unreadCount > 0 && (
-                  <span className="flex-shrink-0 h-4 min-w-[16px] rounded-full bg-[hsl(var(--primary))] text-[8px] font-bold text-white flex items-center justify-center px-1">
-                    {chat.unreadCount}
-                  </span>
-                )}
-              </button>
-            );
-          })
+          filteredConversations.map((chat) => (
+            <ConversationItem
+              key={chat._id}
+              chat={chat}
+              activeChatId={activeChatId}
+              onSelectChat={onSelectChat}
+              currentUserId={user?.id}
+            />
+          ))
         )}
       </div>
 
