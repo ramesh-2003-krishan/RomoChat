@@ -6,6 +6,7 @@ import PublicRoute from "./PublicRoute";
 import Login from "../features/auth/pages/Login";
 import Register from "../features/auth/pages/Register";
 import Home from "../pages/Home";
+import Settings from "../pages/Settings";
 import NotFound from "../pages/NotFound";
 
 const AppRoutes = () => {
@@ -20,6 +21,7 @@ const AppRoutes = () => {
       {/* Private Routes */}
       <Route element={<PrivateRoute />}>
         <Route path="/" element={<Home />} />
+        <Route path="/settings" element={<Settings />} />
       </Route>
 
       {/* fallback */}
