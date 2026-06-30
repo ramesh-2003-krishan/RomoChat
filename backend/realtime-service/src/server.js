@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import http from "http";
 import { Server } from "socket.io";
+import socketAuth from "./middleware/socketAuth.js";
 
 import app from "./app.js";
 
@@ -14,6 +15,8 @@ const io = new Server(server, {
         methods: ["GET", "POST"]
     }
 });
+
+io.use(socketAuth);
 
 io.on("connection", (socket) => {
 
