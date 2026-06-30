@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import http from "http";
 import { Server } from "socket.io";
 import socketAuth from "./middleware/socketAuth.js";
+import onlineUserService from "./services/onlineUserService.js";
 
 import app from "./app.js";
 
@@ -20,16 +21,32 @@ io.use(socketAuth);
 
 io.on("connection", (socket) => {
 
-    console.log(`Client Connected: ${socket.id}`);
+    const userId = socket.user.userId;
+
+    onlineUserService.addUser(
+        userId,
+        socket.id
+    );
+
+    console.log(`${userId} connected`);
+
+    console.log(
+        onlineUserService.getOnlineUsers()
+    );
 
     socket.on("disconnect", () => {
-        console.log(`Client Disconnected: ${socket.id}`);
+
+        onlineUserService.removeUser(
+            userId,
+            socket.id
+        );
+
+        console.log(`${userId} disconnected`);
+
+        console.log(
+            onlineUserService.getOnlineUsers()
+        );
+
     });
 
-});
-
-const PORT = process.env.PORT || 5004;
-
-server.listen(PORT, () => {
-    console.log(`Realtime Service running on port ${PORT}`);
 });
