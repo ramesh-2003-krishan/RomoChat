@@ -7,6 +7,7 @@ import { useMessageStore } from "../features/message/messageStore";
 export const useSocket = () => {
   const token = useAuthStore((state) => state.token);
   const addMessageToHistory = useMessageStore((state) => state.addMessageToHistory);
+  const setTypingStatus = useMessageStore((state) => state.setTypingStatus);
 
   useEffect(() => {
     if (token) {
@@ -21,7 +22,14 @@ export const useSocket = () => {
         }
       };
 
+      // Listener for typing status updates
+      const handleTyping = ({ conversationId, userId, isTyping }) => {
+        console.log("WebSocket typing status received:", { conversationId, userId, isTyping });
+        setTypingStatus(conversationId, userId, isTyping);
+      };
+
       socket.on("new_message", handleNewMessage);
+      socket.on("typing", handleTyping);
 
       // Handle socket connection states logging for debugging
       const handleConnect = () => console.log("Socket connected successfully: ID =", socket.id);
@@ -34,13 +42,14 @@ export const useSocket = () => {
 
       return () => {
         socket.off("new_message", handleNewMessage);
+        socket.off("typing", handleTyping);
         socket.off("connect", handleConnect);
         socket.off("disconnect", handleDisconnect);
         socket.off("connect_error", handleConnectError);
         disconnectSocket();
       };
     }
-  }, [token, addMessageToHistory]);
+  }, [token, addMessageToHistory, setTypingStatus]);
 
   return socket;
 };

@@ -1,11 +1,16 @@
 import React from "react";
 import Avatar from "../common/Avatar";
 
-const Header = ({ activeChat, onToggleSidebar }) => {
+const Header = ({ activeChat, onToggleSidebar, typingStates }) => {
   if (!activeChat) return null;
 
   const chatName = activeChat.isGroup ? activeChat.groupName : activeChat.otherParticipantName;
   const isOnline = activeChat.isOnline || false;
+
+  // Resolve if the other participant is typing
+  const conversationTyping = typingStates?.[activeChat.id] || {};
+  const otherTypingIds = Object.keys(conversationTyping).filter((id) => conversationTyping[id]);
+  const isTyping = otherTypingIds.length > 0;
 
   return (
     <div className="glass-panel sticky top-0 z-40 border-x-0 border-t-0 h-16 px-6 flex items-center justify-between">
@@ -27,8 +32,17 @@ const Header = ({ activeChat, onToggleSidebar }) => {
             {chatName}
           </h2>
           <p className="text-[10px] text-[hsl(var(--text-muted))] flex items-center gap-1.5 mt-0.5">
-            <span className={`inline-block w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-[hsl(var(--success))]' : 'bg-zinc-500'}`} />
-            {isOnline ? "Online" : "Offline"}
+            {isTyping ? (
+              <>
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[hsl(var(--primary))] animate-ping" />
+                <span className="text-[hsl(var(--primary))] font-bold">typing...</span>
+              </>
+            ) : (
+              <>
+                <span className={`inline-block w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-[hsl(var(--success))]' : 'bg-zinc-500'}`} />
+                {isOnline ? "Online" : "Offline"}
+              </>
+            )}
           </p>
         </div>
       </div>

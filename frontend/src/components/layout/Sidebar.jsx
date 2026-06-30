@@ -18,7 +18,7 @@ const formatTime = (dateString) => {
   }
 };
 
-const ConversationItem = ({ chat, activeChatId, onSelectChat, currentUserId }) => {
+const ConversationItem = ({ chat, activeChatId, onSelectChat, currentUserId, typingStates }) => {
   const isGroup = chat.isGroup;
   const otherParticipantId = isGroup
     ? null
@@ -35,6 +35,11 @@ const ConversationItem = ({ chat, activeChatId, onSelectChat, currentUserId }) =
   const chatName = isGroup ? chat.groupName : (profile?.displayName || profile?.username || "Loading...");
   const isOnline = isGroup ? false : (profile?.isOnline || false);
   const isActive = chat._id === activeChatId;
+
+  // Determine if other participant is currently typing
+  const conversationTyping = typingStates?.[chat._id] || {};
+  const otherTypingIds = Object.keys(conversationTyping).filter((id) => id !== currentUserId && conversationTyping[id]);
+  const isTyping = otherTypingIds.length > 0;
 
   const handleClick = () => {
     onSelectChat({
@@ -65,8 +70,8 @@ const ConversationItem = ({ chat, activeChatId, onSelectChat, currentUserId }) =
             {formatTime(chat.lastMessageAt || chat.updatedAt)}
           </span>
         </div>
-        <p className="text-[11px] text-[hsl(var(--text-muted))] truncate">
-          {chat.lastMessage || "No messages yet"}
+        <p className={`text-[11px] truncate ${isTyping ? "text-[hsl(var(--primary))] font-bold animate-pulse" : "text-[hsl(var(--text-muted))]"}`}>
+          {isTyping ? "Typing..." : (chat.lastMessage || "No messages yet")}
         </p>
       </div>
 
@@ -79,7 +84,7 @@ const ConversationItem = ({ chat, activeChatId, onSelectChat, currentUserId }) =
   );
 };
 
-const Sidebar = ({ conversations = [], activeChatId, onSelectChat }) => {
+const Sidebar = ({ conversations = [], activeChatId, onSelectChat, typingStates }) => {
   const [searchQuery, setSearchQuery] = useState("");
   
   // Modal states
@@ -168,6 +173,7 @@ const Sidebar = ({ conversations = [], activeChatId, onSelectChat }) => {
               activeChatId={activeChatId}
               onSelectChat={onSelectChat}
               currentUserId={user?.id}
+              typingStates={typingStates}
             />
           ))
         )}

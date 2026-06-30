@@ -4,6 +4,7 @@ import { getMessagesAPI, sendMessageAPI } from "../../services/chatService";
 export const useMessageStore = create((set, get) => ({
   messages: {}, // { [conversationId]: [message1, message2, ...] }
   activeMessages: [],
+  typingStates: {}, // { [conversationId]: { [userId]: boolean } }
   isLoading: false,
   error: null,
 
@@ -66,13 +67,11 @@ export const useMessageStore = create((set, get) => ({
     if (!conversationId || !newMsg) return;
     set((state) => {
       const currentList = state.messages[conversationId] || [];
-      // Prevent duplicates in case WebSocket and REST API match
       const exists = currentList.some((m) => (m._id || m.id) === (newMsg._id || newMsg.id));
       if (exists) return {};
 
       const updatedList = [...currentList, newMsg];
       
-      // If we are currently viewing this conversation, update activeMessages as well
       const activeUpdated = (state.activeMessages.length > 0 && state.activeMessages[0].conversationId === conversationId) 
         ? updatedList 
         : state.activeMessages;
@@ -83,6 +82,29 @@ export const useMessageStore = create((set, get) => ({
           [conversationId]: updatedList,
         },
         activeMessages: activeUpdated,
+      };
+    });
+  },
+
+  setTypingStatus: (conversationId, userId, isTyping) => {
+    if (!conversationId || !userId) return;
+    set((state) => {
+      const conversationTyping = state.typingStates[conversationId] || {};
+      const updatedTyping = {
+        ...conversationTyping,
+        [userId]: isTyping,
+      };
+
+      // Clean up falsy states to avoid accumulation
+      if (!isTyping) {
+        delete updatedTyping[userId];
+      }
+
+      return {
+        typingStates: {
+          ...state.typingStates,
+          [conversationId]: updatedTyping,
+        },
       };
     });
   },

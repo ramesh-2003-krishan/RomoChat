@@ -4,22 +4,85 @@ import Header from "./Header";
 import EmptyState from "../common/EmptyState";
 import Avatar from "../common/Avatar";
 import { useAuthStore } from "../../features/auth/authStore";
+import { useMessageStore } from "../../features/message/messageStore";
+import { socket } from "../../config/socket";
 
 const MainLayout = ({ conversations = [], activeChat, onSelectChat, mockMessages = [], onSendMessage }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [inputText, setInputText] = useState("");
   
   const user = useAuthStore((state) => state.user);
+  const typingStates = useMessageStore((state) => state.typingStates);
   const messagesEndRef = useRef(null);
+
+  // Debouncing refs for typing state
+  const typingTimeoutRef = useRef(null);
+  const isTypingRef = useRef(false);
 
   // Auto scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mockMessages]);
 
+  // Clean up typing status on chat change
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      if (isTypingRef.current && activeChat?.id) {
+        socket.emit("typing", {
+          conversationId: activeChat.id,
+          isTyping: false,
+        });
+      }
+      isTypingRef.current = false;
+    };
+  }, [activeChat?.id]);
+
+  const sendTypingStatus = (isTyping) => {
+    if (!activeChat?.id) return;
+    socket.emit("typing", {
+      conversationId: activeChat.id,
+      isTyping,
+    });
+  };
+
+  const handleInputChange = (e) => {
+    const text = e.target.value;
+    setInputText(text);
+
+    if (!isTypingRef.current && text.trim().length > 0) {
+      isTypingRef.current = true;
+      sendTypingStatus(true);
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    if (text.trim().length === 0) {
+      isTypingRef.current = false;
+      sendTypingStatus(false);
+    } else {
+      typingTimeoutRef.current = setTimeout(() => {
+        isTypingRef.current = false;
+        sendTypingStatus(false);
+      }, 2000);
+    }
+  };
+
   const handleSend = (e) => {
     e.preventDefault();
     if (!inputText.trim()) return;
+
+    // Reset typing state instantly on send
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    isTypingRef.current = false;
+    sendTypingStatus(false);
+
     if (onSendMessage) {
       onSendMessage(inputText);
     }
@@ -37,9 +100,9 @@ const MainLayout = ({ conversations = [], activeChat, onSelectChat, mockMessages
         <Sidebar
           conversations={conversations}
           activeChatId={activeChat?.id}
+          typingStates={typingStates}
           onSelectChat={(chat) => {
             onSelectChat(chat);
-            // Auto close sidebar on mobile when a chat is selected
             if (window.innerWidth < 768) {
               setSidebarOpen(false);
             }
@@ -61,6 +124,7 @@ const MainLayout = ({ conversations = [], activeChat, onSelectChat, mockMessages
           <>
             <Header
               activeChat={activeChat}
+              typingStates={typingStates}
               onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
             />
 
@@ -112,7 +176,6 @@ const MainLayout = ({ conversations = [], activeChat, onSelectChat, mockMessages
                   );
                 })
               )}
-              {/* Dummy bottom ref for scroll targets */}
               <div ref={messagesEndRef} />
             </div>
 
@@ -124,7 +187,7 @@ const MainLayout = ({ conversations = [], activeChat, onSelectChat, mockMessages
               <input
                 type="text"
                 value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
+                onChange={handleInputChange}
                 placeholder="Type a message..."
                 className="flex-1 px-4 py-2.5 text-sm rounded-lg glass-input focus:outline-none"
               />
@@ -140,7 +203,6 @@ const MainLayout = ({ conversations = [], activeChat, onSelectChat, mockMessages
           </>
         ) : (
           <div className="flex-1 flex flex-col">
-            {/* Minimal Mobile Header when empty */}
             <div className="h-16 border-b border-[hsl(var(--card-border))] px-4 flex items-center md:hidden bg-[hsl(var(--bg-secondary))]">
               <button
                 onClick={() => setSidebarOpen(true)}
