@@ -44,6 +44,20 @@ export const sendMessage = async (req, res) => {
 
         await conversation.save();
 
+        // Notify realtime-service asynchronously
+        const realtimeServiceUrl = process.env.REALTIME_SERVICE_URL || "http://localhost:5004";
+        fetch(`${realtimeServiceUrl}/internal/message`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                message
+            })
+        }).catch(err => {
+            console.error("Failed to notify realtime service:", err.message);
+        });
+
         res.status(201).json({
             success: true,
             message
