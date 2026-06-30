@@ -17,6 +17,8 @@ const io = new Server(server, {
     }
 });
 
+app.set("io", io);
+
 io.use(socketAuth);
 
 io.on("connection", (socket) => {
