@@ -1,11 +1,14 @@
-import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import MainLayout from "../components/layout/MainLayout";
-import { getConversationsAPI, getMessagesAPI, sendMessageAPI } from "../services/chatService";
+import { getConversationsAPI } from "../services/chatService";
+import { useMessageStore } from "../features/message/messageStore";
 
 const Home = () => {
   const queryClient = useQueryClient();
   const [activeChat, setActiveChat] = useState(null);
+
+  const { activeMessages, fetchMessageHistory, sendMessage } = useMessageStore();
 
   // 1. Fetch conversations from database
   const { data: conversationsData } = useQuery({
@@ -16,37 +19,33 @@ const Home = () => {
 
   const conversations = conversationsData?.conversations || [];
 
-  // 2. Fetch message history for selected chat
-  const { data: messagesData } = useQuery({
-    queryKey: ["messages", activeChat?.id],
-    queryFn: () => getMessagesAPI(activeChat.id),
-    enabled: !!activeChat?.id,
-    refetchInterval: 3000, // Poll every 3s to get messages instantly
-  });
+  // 2. Manage message history sync & polling
+  useEffect(() => {
+    if (activeChat?.id) {
+      // Initial fetch
+      fetchMessageHistory(activeChat.id);
 
-  const messages = messagesData?.messages || [];
+      // Polling for updates
+      const interval = setInterval(() => {
+        fetchMessageHistory(activeChat.id);
+      }, 3000);
 
-  // 3. Send message mutation
-  const sendMessageMutation = useMutation({
-    mutationFn: sendMessageAPI,
-    onSuccess: () => {
-      // Invalidate target caches to trigger refresh
-      queryClient.invalidateQueries({ queryKey: ["messages", activeChat?.id] });
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    },
-  });
+      return () => clearInterval(interval);
+    }
+  }, [activeChat?.id, fetchMessageHistory]);
 
   const handleSelectChat = (chat) => {
     setActiveChat(chat);
   };
 
-  const handleSendMessage = (text) => {
+  const handleSendMessage = async (text) => {
     if (!activeChat?.id) return;
     
-    sendMessageMutation.mutate({
-      conversationId: activeChat.id,
-      content: text,
-    });
+    const res = await sendMessage(activeChat.id, text);
+    if (res.success) {
+      // Invalidate conversations query to refresh last message preview in sidebar
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    }
   };
 
   return (
@@ -54,7 +53,7 @@ const Home = () => {
       conversations={conversations}
       activeChat={activeChat}
       onSelectChat={handleSelectChat}
-      mockMessages={messages}
+      mockMessages={activeMessages}
       onSendMessage={handleSendMessage}
     />
   );
