@@ -1,12 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import EmptyState from "../common/EmptyState";
 import Avatar from "../common/Avatar";
+import { useAuthStore } from "../../features/auth/authStore";
 
 const MainLayout = ({ conversations = [], activeChat, onSelectChat, mockMessages = [], onSendMessage }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [inputText, setInputText] = useState("");
+  
+  const user = useAuthStore((state) => state.user);
+  const messagesEndRef = useRef(null);
+
+  // Auto scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [mockMessages]);
 
   const handleSend = (e) => {
     e.preventDefault();
@@ -63,10 +72,10 @@ const MainLayout = ({ conversations = [], activeChat, onSelectChat, mockMessages
                 </div>
               ) : (
                 mockMessages.map((msg) => {
-                  const isMe = msg.senderId === "me";
+                  const isMe = msg.senderId === user?.id;
                   return (
                     <div
-                      key={msg.id}
+                      key={msg._id || msg.id}
                       className={`flex gap-3 max-w-[80%] ${
                         isMe ? "ml-auto flex-row-reverse" : "mr-auto"
                       }`}
@@ -103,6 +112,8 @@ const MainLayout = ({ conversations = [], activeChat, onSelectChat, mockMessages
                   );
                 })
               )}
+              {/* Dummy bottom ref for scroll targets */}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Input message form panel */}

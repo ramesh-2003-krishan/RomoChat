@@ -11,3 +11,16 @@ export const createConversationAPI = async (receiverId) => {
   });
   return response.data;
 };
+
+export const getMessagesAPI = async (conversationId) => {
+  const response = await apiClient.get(`/api/chats/messages/${conversationId}`);
+  return response.data;
+};
+
+export const sendMessageAPI = async ({ conversationId, content }) => {
+  const response = await apiClient.post("/api/chats/messages", {
+    conversationId,
+    content,
+  });
+  return response.data;
+};
