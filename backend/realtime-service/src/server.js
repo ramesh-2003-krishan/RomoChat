@@ -34,6 +34,55 @@ io.on("connection", (socket) => {
         onlineUserService.getOnlineUsers()
     );
 
+    socket.on("join_room", async ({ conversationId }, callback) => {
+        try {
+            if (!conversationId) {
+                if (typeof callback === "function") {
+                    return callback({ success: false, message: "conversationId is required" });
+                }
+                return socket.emit("join_room_error", { message: "conversationId is required" });
+            }
+
+            // Security Check: Verify that user is a participant of the conversation
+            const chatServiceUrl = process.env.CHAT_SERVICE_URL || "http://localhost:5003";
+            const response = await fetch(`${chatServiceUrl}/conversations/${conversationId}`, {
+                method: "GET",
+                headers: {
+                    "x-user-id": userId
+                }
+            });
+
+            if (!response.ok) {
+                if (typeof callback === "function") {
+                    return callback({ success: false, message: "Unauthorized or conversation not found" });
+                }
+                return socket.emit("join_room_error", {
+                    conversationId,
+                    message: "Unauthorized or conversation not found"
+                });
+            }
+
+            socket.join(conversationId);
+            console.log(`User ${userId} joined room: ${conversationId}`);
+
+            if (typeof callback === "function") {
+                callback({ success: true, message: `Joined room: ${conversationId}` });
+            }
+
+            socket.emit("joined_room", { conversationId });
+
+        } catch (error) {
+            console.error(`Error joining room ${conversationId}:`, error);
+            if (typeof callback === "function") {
+                callback({ success: false, message: "Server error joining room" });
+            }
+            socket.emit("join_room_error", {
+                conversationId,
+                message: "Server error joining room"
+            });
+        }
+    });
+
     socket.on("disconnect", () => {
 
         onlineUserService.removeUser(
