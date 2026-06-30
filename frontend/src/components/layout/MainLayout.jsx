@@ -15,16 +15,13 @@ const MainLayout = ({ conversations = [], activeChat, onSelectChat, mockMessages
   const typingStates = useMessageStore((state) => state.typingStates);
   const messagesEndRef = useRef(null);
 
-  // Debouncing refs for typing state
   const typingTimeoutRef = useRef(null);
   const isTypingRef = useRef(false);
 
-  // Auto scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mockMessages]);
 
-  // Clean up typing status on chat change
   useEffect(() => {
     return () => {
       if (typingTimeoutRef.current) {
@@ -76,7 +73,6 @@ const MainLayout = ({ conversations = [], activeChat, onSelectChat, mockMessages
     e.preventDefault();
     if (!inputText.trim()) return;
 
-    // Reset typing state instantly on send
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
@@ -91,7 +87,6 @@ const MainLayout = ({ conversations = [], activeChat, onSelectChat, mockMessages
 
   return (
     <div className="w-screen h-screen flex bg-[hsl(var(--bg-primary))] overflow-hidden relative">
-      {/* Sidebar Container */}
       <div
         className={`absolute md:relative z-30 h-full transition-transform duration-300 transform md:transform-none ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -110,7 +105,6 @@ const MainLayout = ({ conversations = [], activeChat, onSelectChat, mockMessages
         />
       </div>
 
-      {/* Sidebar Mobile Backdrop Overlay */}
       {sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
@@ -118,7 +112,6 @@ const MainLayout = ({ conversations = [], activeChat, onSelectChat, mockMessages
         />
       )}
 
-      {/* Chat / Content Container */}
       <div className="flex-1 h-full flex flex-col min-w-0">
         {activeChat ? (
           <>
@@ -128,7 +121,6 @@ const MainLayout = ({ conversations = [], activeChat, onSelectChat, mockMessages
               onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
             />
 
-            {/* Messages Log area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[hsl(var(--bg-primary))] relative">
               {mockMessages.length === 0 ? (
                 <div className="h-full flex items-center justify-center text-xs text-[hsl(var(--text-muted))]">
@@ -162,14 +154,21 @@ const MainLayout = ({ conversations = [], activeChat, onSelectChat, mockMessages
                           {msg.content}
                         </div>
                         <p
-                          className={`text-[9px] text-[hsl(var(--text-muted))] mt-1 ${
-                            isMe ? "text-right" : "text-left"
+                          className={`text-[9px] text-[hsl(var(--text-muted))] mt-1 flex items-center gap-1.5 ${
+                            isMe ? "justify-end" : "justify-start"
                           }`}
                         >
-                          {new Date(msg.createdAt).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          <span>
+                            {new Date(msg.createdAt).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                          {isMe && (
+                            <span className={msg.isRead ? "text-blue-400 font-bold" : "text-zinc-500 font-bold"}>
+                              {msg.isRead ? "✓✓" : "✓"}
+                            </span>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -179,7 +178,6 @@ const MainLayout = ({ conversations = [], activeChat, onSelectChat, mockMessages
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input message form panel */}
             <form
               onSubmit={handleSend}
               className="p-4 border-t border-[hsl(var(--card-border))] bg-[hsla(240,10%,7%,0.4)] flex items-center gap-3"

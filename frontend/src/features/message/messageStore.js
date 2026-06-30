@@ -2,9 +2,9 @@ import { create } from "zustand";
 import { getMessagesAPI, sendMessageAPI } from "../../services/chatService";
 
 export const useMessageStore = create((set, get) => ({
-  messages: {}, // { [conversationId]: [message1, message2, ...] }
+  messages: {},
   activeMessages: [],
-  typingStates: {}, // { [conversationId]: { [userId]: boolean } }
+  typingStates: {},
   isLoading: false,
   error: null,
 
@@ -40,7 +40,6 @@ export const useMessageStore = create((set, get) => ({
       if (data.success && data.message) {
         const newMsg = data.message;
         
-        // Optimistically append the sent message to local state
         set((state) => {
           const currentList = state.messages[conversationId] || [];
           const updatedList = [...currentList, newMsg];
@@ -95,7 +94,6 @@ export const useMessageStore = create((set, get) => ({
         [userId]: isTyping,
       };
 
-      // Clean up falsy states to avoid accumulation
       if (!isTyping) {
         delete updatedTyping[userId];
       }
@@ -105,6 +103,31 @@ export const useMessageStore = create((set, get) => ({
           ...state.typingStates,
           [conversationId]: updatedTyping,
         },
+      };
+    });
+  },
+
+  markLocalMessagesAsRead: (conversationId, readerId) => {
+    if (!conversationId || !readerId) return;
+    set((state) => {
+      const currentList = state.messages[conversationId] || [];
+      const updatedList = currentList.map((msg) => {
+        if (msg.senderId !== readerId) {
+          return { ...msg, isRead: true };
+        }
+        return msg;
+      });
+
+      const activeUpdated = (state.activeMessages.length > 0 && (state.activeMessages[0].conversationId || state.activeMessages[0].conversationId?._id) === conversationId)
+        ? updatedList
+        : state.activeMessages;
+
+      return {
+        messages: {
+          ...state.messages,
+          [conversationId]: updatedList,
+        },
+        activeMessages: activeUpdated,
       };
     });
   },

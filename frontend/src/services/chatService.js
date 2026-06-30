@@ -24,3 +24,8 @@ export const sendMessageAPI = async ({ conversationId, content }) => {
   });
   return response.data;
 };
+
+export const markMessagesAsReadAPI = async (conversationId) => {
+  const response = await apiClient.patch(`/api/chats/messages/read/${conversationId}`);
+  return response.data;
+};
