@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+@import "./variables.css";
+@import "./animations.css";
+
+body {
+  margin: 0;
+  background-color: hsl(var(--bg-primary));
+  color: hsl(var(--text-main));
+  font-family: var(--font-family);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Glassmorphism styles */
+.glass-panel {
+  background: hsl(var(--card-bg));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid hsl(var(--card-border));
+}
+
+.glass-input {
+  background: hsla(240, 10%, 4%, 0.4);
+  border: 1px solid hsl(var(--card-border));
+  color: hsl(var(--text-main));
+  transition: all 0.2s ease-in-out;
+}
+
+.glass-input:focus {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 10px hsla(263, 70%, 50.4%, 0.15);
+  outline: none;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #fff 30%, hsla(0, 0%, 100%, 0.7));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

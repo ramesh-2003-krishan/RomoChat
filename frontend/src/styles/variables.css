@@ -1,0 +1,22 @@
+:root {
+  /* Color Palette - HSL (Dark Mode) */
+  --bg-primary: 240 10% 4%;
+  --bg-secondary: 240 10% 7%;
+  --bg-tertiary: 240 10% 12%;
+  
+  --card-bg: 240 10% 7% / 0.6;
+  --card-border: 240 5.9% 15% / 0.8;
+  
+  --primary: 263.4 70% 50.4%; /* Deep Royal Purple */
+  --primary-hover: 263.4 70% 60%;
+  --accent: 191.6 91.4% 36.5%; /* Neon Cyan Accents */
+  
+  --text-main: 0 0% 98%;
+  --text-muted: 240 5% 65%;
+  
+  --success: 142.1 70.6% 45.3%;
+  --error: 346.8 77.2% 49.8%;
+  
+  /* Fonts */
+  --font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
