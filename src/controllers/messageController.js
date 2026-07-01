@@ -234,3 +234,41 @@ export const deleteMessage = async (req, res) => {
         });
     }
 };
+
+export const markMessagesAsRead = async (req, res) => {
+    try {
+        const { conversationId } = req.params;
+        const currentUserId = req.headers["x-user-id"];
+
+        if (!conversationId) {
+            return res.status(400).json({
+                success: false,
+                message: "conversationId is required"
+            });
+        }
+
+        await Message.updateMany(
+            { conversationId, senderId: { $ne: currentUserId }, isRead: false },
+            { $set: { isRead: true } }
+        );
+
+        const realtimeServiceUrl = process.env.REALTIME_SERVICE_URL || "http://localhost:5004";
+        fetch(`${realtimeServiceUrl}/internal/read-status`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ conversationId, userId: currentUserId })
+        }).catch(err => {});
+
+        res.status(200).json({
+            success: true
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};
