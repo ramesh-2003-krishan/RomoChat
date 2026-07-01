@@ -19,6 +19,23 @@ const MainLayout = ({ conversations = [], activeChat, onSelectChat, mockMessages
   const isTypingRef = useRef(false);
 
   useEffect(() => {
+    if (!activeChat) {
+      setSidebarOpen(true);
+    }
+  }, [activeChat]);
+
+  useEffect(() => {
+    if (sidebarOpen && window.innerWidth < 768) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [sidebarOpen]);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mockMessages]);
 
