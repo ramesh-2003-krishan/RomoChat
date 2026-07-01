@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { socket } from "../config/socket";
-import { connectSocket, disconnectSocket } from "../services/socketService";
+import { connectSocket, disconnectSocket, joinRoom } from "../services/socketService";
 import { useAuthStore } from "../features/auth/authStore";
 import { useMessageStore } from "../features/message/messageStore";
 import { useNotificationStore } from "../features/notification/notificationStore";
@@ -12,7 +12,7 @@ import { getProfileByIdAPI } from "../services/userService";
 export const useSocket = (activeChatId) => {
   const queryClient = useQueryClient();
   const token = useAuthStore((state) => state.token);
-  
+
   const addMessageToHistory = useMessageStore((state) => state.addMessageToHistory);
   const setTypingStatus = useMessageStore((state) => state.setTypingStatus);
   const markLocalMessagesAsRead = useMessageStore((state) => state.markLocalMessagesAsRead);
@@ -48,7 +48,7 @@ export const useSocket = (activeChatId) => {
                 });
                 senderName = res?.profile?.displayName || res?.profile?.username || "New Message";
               }
-            } catch (err) {}
+            } catch (err) { }
 
             addToast({
               title: senderName,
@@ -84,16 +84,28 @@ export const useSocket = (activeChatId) => {
         markLocalMessagesAsRead(conversationId, readerId);
       };
 
+      const handleConnect = () => {
+        if (activeChatIdRef.current) {
+          joinRoom(activeChatIdRef.current);
+        }
+      };
+
       socket.on("new_message", handleNewMessage);
       socket.on("typing", handleTyping);
       socket.on("user_status", handleUserStatus);
       socket.on("messages_read", handleMessagesRead);
+      socket.on("connect", handleConnect);
+
+      if (socket.connected && activeChatIdRef.current) {
+        joinRoom(activeChatIdRef.current);
+      }
 
       return () => {
         socket.off("new_message", handleNewMessage);
         socket.off("typing", handleTyping);
         socket.off("user_status", handleUserStatus);
         socket.off("messages_read", handleMessagesRead);
+        socket.off("connect", handleConnect);
         disconnectSocket();
       };
     }

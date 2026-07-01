@@ -30,6 +30,18 @@ io.on("connection", (socket) => {
         socket.id
     );
 
+    io.emit("user_status", { userId, isOnline: true });
+
+    const userServiceUrl = process.env.USER_SERVICE_URL || "http://localhost:5002";
+    fetch(`${userServiceUrl}/profile/online-status`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+            "x-user-id": userId
+        },
+        body: JSON.stringify({ isOnline: true })
+    }).catch(err => { });
+
     console.log(`${userId} connected`);
 
     console.log(
@@ -85,12 +97,31 @@ io.on("connection", (socket) => {
         }
     });
 
+    socket.on("typing", ({ conversationId, isTyping }) => {
+        if (conversationId) {
+            socket.to(conversationId).emit("typing", { conversationId, userId, isTyping });
+        }
+    });
+
     socket.on("disconnect", () => {
 
         onlineUserService.removeUser(
             userId,
             socket.id
         );
+
+        if (!onlineUserService.isUserOnline(userId)) {
+            io.emit("user_status", { userId, isOnline: false });
+            const userServiceUrl = process.env.USER_SERVICE_URL || "http://localhost:5002";
+            fetch(`${userServiceUrl}/profile/online-status`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-user-id": userId
+                },
+                body: JSON.stringify({ isOnline: false })
+            }).catch(err => { });
+        }
 
         console.log(`${userId} disconnected`);
 

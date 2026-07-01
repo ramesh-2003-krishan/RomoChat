@@ -46,4 +46,31 @@ app.post("/internal/message", (req, res) => {
     }
 });
 
+app.post("/internal/read-status", (req, res) => {
+    try {
+        const { conversationId, userId } = req.body;
+        if (!conversationId || !userId) {
+            return res.status(400).json({
+                success: false,
+                message: "conversationId and userId are required"
+            });
+        }
+
+        const io = app.get("io");
+        if (io) {
+            io.to(conversationId.toString()).emit("messages_read", { conversationId, readerId: userId });
+        }
+
+        res.status(200).json({
+            success: true
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    }
+});
+
 export default app;

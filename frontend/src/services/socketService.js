@@ -18,16 +18,11 @@ export const disconnectSocket = () => {
 
 export const joinRoom = (conversationId) => {
   if (!conversationId) return;
-  
-  if (socket.connected) {
-    socket.emit("join_room", { conversationId }, (res) => {
-      if (res?.success) {
-        console.log(`Successfully joined room lobby: ${conversationId}`);
-      } else {
-        console.warn(`Failed joining room lobby: ${res?.message}`);
-      }
-    });
-  } else {
-    console.warn("Cannot join room: Socket is not connected.");
-  }
+  socket.emit("join_room", { conversationId }, (res) => {
+    if (res?.success) {
+      console.log(`Successfully joined room lobby: ${conversationId}`);
+    } else {
+      console.warn(`Failed joining room lobby: ${res?.message}`);
+    }
+  });
 };

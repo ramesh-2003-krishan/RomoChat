@@ -221,7 +221,6 @@ export const deleteMessage = async (req, res) => {
             await conversation.save();
         }
 
-        res.status(200).json({
             success: true,
             message: "Message deleted successfully"
         });
