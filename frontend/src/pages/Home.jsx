@@ -5,12 +5,13 @@ import { getConversationsAPI, markMessagesAsReadAPI } from "../services/chatServ
 import { useMessageStore } from "../features/message/messageStore";
 import { useSocket } from "../hooks/useSocket";
 import { joinRoom } from "../services/socketService";
+import { requestNotificationPermission } from "../utils/notificationHelper";
 
 const Home = () => {
   const queryClient = useQueryClient();
   const [activeChat, setActiveChat] = useState(null);
 
-  useSocket();
+  useSocket(activeChat?.id);
 
   const { activeMessages, fetchMessageHistory, sendMessage } = useMessageStore();
 
@@ -21,6 +22,22 @@ const Home = () => {
   });
 
   const conversations = conversationsData?.conversations || [];
+
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
+
+  useEffect(() => {
+    const handleSelect = (e) => {
+      const targetId = e.detail?.id;
+      const targetChat = conversations.find((c) => c._id === targetId);
+      if (targetChat) {
+        handleSelectChat(targetChat);
+      }
+    };
+    window.addEventListener("select_conversation", handleSelect);
+    return () => window.removeEventListener("select_conversation", handleSelect);
+  }, [conversations]);
 
   useEffect(() => {
     if (activeChat?.id) {
