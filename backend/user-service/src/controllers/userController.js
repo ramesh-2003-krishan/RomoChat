@@ -198,3 +198,62 @@ export const updateOnlineStatus = async (req, res) => {
 
     }
 };
+
+export const getProfileById = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const profile = await UserProfile.findOne({ authUserId: userId });
+
+        if (!profile) {
+            return res.status(404).json({
+                success: false,
+                message: "Profile not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            profile
+        });
+    } catch (error) {
+        console.error("Error in getProfileById:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};
+
+export const searchProfiles = async (req, res) => {
+    try {
+        const currentUserId = req.headers["x-user-id"];
+        const { query } = req.query;
+
+        if (!query) {
+            return res.status(200).json({
+                success: true,
+                profiles: []
+            });
+        }
+
+        const profiles = await UserProfile.find({
+            authUserId: { $ne: currentUserId },
+            $or: [
+                { username: { $regex: query, $options: "i" } },
+                { displayName: { $regex: query, $options: "i" } },
+                { email: { $regex: query, $options: "i" } }
+            ]
+        }).limit(10);
+
+        res.status(200).json({
+            success: true,
+            profiles
+        });
+    } catch (error) {
+        console.error("Error in searchProfiles:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};
