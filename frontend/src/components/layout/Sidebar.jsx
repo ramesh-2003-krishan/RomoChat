@@ -135,7 +135,7 @@ const Sidebar = ({ conversations = [], activeChatId, onSelectChat, typingStates 
       <div className="p-4 flex items-center justify-between border-b border-[hsl(var(--card-border))]">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[hsl(var(--primary))] to-[hsl(var(--accent))] flex items-center justify-center font-bold text-white shadow-md text-sm">
-            R
+            <img src="/logo.svg" alt="RomoChat Logo" className="w-5 h-5" />
           </div>
           <span className="text-md font-bold tracking-tight text-gradient">
             RomoChat
