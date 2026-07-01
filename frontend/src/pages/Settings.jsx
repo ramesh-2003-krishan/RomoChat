@@ -4,11 +4,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getProfileAPI, updateProfileAPI } from "../services/userService";
 import { useAuthStore } from "../features/auth/authStore";
 import Avatar from "../components/common/Avatar";
+import { useThemeStore } from "../features/theme/themeStore";
 
 const Settings = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const authUser = useAuthStore((state) => state.user);
+  const { theme, setTheme } = useThemeStore();
 
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
@@ -19,13 +21,11 @@ const Settings = () => {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
-  // Fetch user profile from API
   const { data, isLoading, isError } = useQuery({
     queryKey: ["profile"],
     queryFn: getProfileAPI,
   });
 
-  // Populate state on load
   useEffect(() => {
     if (data?.profile) {
       setDisplayName(data.profile.displayName || "");
@@ -36,17 +36,14 @@ const Settings = () => {
     }
   }, [data]);
 
-  // Profile update mutation
   const mutation = useMutation({
     mutationFn: updateProfileAPI,
     onSuccess: (res) => {
       setSuccessMsg("Profile updated successfully!");
       setErrorMsg("");
 
-      // Update React Query Cache
       queryClient.setQueryData(["profile"], res);
 
-      // Sync with Zustand auth state & localStorage
       const updatedUser = {
         ...authUser,
         username: res.profile.username,
@@ -85,12 +82,10 @@ const Settings = () => {
 
   return (
     <div className="min-h-screen bg-[hsl(var(--bg-primary))] flex flex-col relative overflow-hidden px-4 py-8">
-      {/* Background Glows */}
       <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-[hsla(263,70%,50%,0.08)] blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-[hsla(191,91%,36%,0.05)] blur-[120px] pointer-events-none" />
 
       <div className="max-w-2xl w-full mx-auto glass-panel rounded-2xl p-8 shadow-2xl relative z-10 animate-slide-up">
-        {/* Header navigation bar */}
         <div className="flex items-center justify-between mb-8 border-b border-[hsl(var(--card-border))] pb-4">
           <div className="flex items-center gap-3">
             <Link
@@ -122,7 +117,6 @@ const Settings = () => {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Messages feedback banners */}
             {errorMsg && (
               <div className="p-4 rounded-lg bg-[hsla(346,77%,49%,0.15)] border border-[hsla(346,77%,49%,0.3)] text-[hsl(var(--error))] text-sm">
                 {errorMsg}
@@ -134,7 +128,6 @@ const Settings = () => {
               </div>
             )}
 
-            {/* Profile Avatar Card Preview */}
             <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-xl border border-[hsl(var(--card-border))] bg-[hsla(240,10%,7%,0.4)] mb-6">
               <Avatar name={displayName || username || "Me"} size="w-16 h-16" />
               <div className="text-center sm:text-left">
@@ -143,7 +136,6 @@ const Settings = () => {
               </div>
             </div>
 
-            {/* Form Fields */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--text-main))] mb-2">
@@ -197,6 +189,34 @@ const Settings = () => {
                   className="w-full px-4 py-2.5 rounded-lg glass-input text-sm resize-none"
                   placeholder="Tell us about yourself..."
                 />
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-[hsl(var(--card-border))]">
+              <label className="block text-sm font-medium text-[hsl(var(--text-main))] mb-3">
+                Visual Theme
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                  { id: "default", name: "Royal Purple", color: "bg-purple-600" },
+                  { id: "cyberpunk", name: "Cyberpunk", color: "bg-pink-500" },
+                  { id: "emerald", name: "Emerald", color: "bg-emerald-500" },
+                  { id: "light", name: "Light Frost", color: "bg-blue-500 border border-zinc-300" },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTheme(t.id)}
+                    className={`p-3 rounded-xl border flex flex-col items-center gap-2 text-center transition-all cursor-pointer ${
+                      theme === t.id
+                        ? "border-[hsl(var(--primary))] bg-[hsla(263,70%,50%,0.1)]"
+                        : "border-[hsl(var(--card-border))] bg-[hsla(240,10%,7%,0.4)] hover:bg-[hsl(var(--bg-tertiary))]"
+                    }`}
+                  >
+                    <span className={`w-6 h-6 rounded-full ${t.color}`} />
+                    <span className="text-xs font-bold text-[hsl(var(--text-main))]">{t.name}</span>
+                  </button>
+                ))}
               </div>
             </div>
 
